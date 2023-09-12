@@ -73,36 +73,28 @@ func NewClient() Client {
 func (c *client) Create(dto Request, opts ...rest.Option) (*Response, error) {
 	body, err := json.Marshal(&dto)
 	if err != nil {
-		return nil, err
+		return nil, &rest.ErrorResponse{
+			StatusCode: http.StatusInternalServerError,
+			Message:    "error marshaling request body: " + err.Error(),
+		}
 	}
 
 	reader := strings.NewReader(string(body))
 	req, err := http.NewRequest("POST", postURL, reader)
 	if err != nil {
-		return nil, err
-	}
-
-	res, err := c.hc.Send(req, opts...)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
-	read, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if res.StatusCode < 200 || res.StatusCode > 299 {
 		return nil, &rest.ErrorResponse{
-			StatusCode: res.StatusCode,
-			Message:    string(read),
-			Headers:    res.Header,
+			StatusCode: http.StatusInternalServerError,
+			Message:    "error creating request" + err.Error(),
 		}
 	}
 
+	res, err := c.delegateSend(req, opts...)
+	if err != nil {
+		return nil, err
+	}
+
 	formatted := &Response{}
-	if err := json.Unmarshal(read, &formatted); err != nil {
+	if err := json.Unmarshal(res, &formatted); err != nil {
 		return nil, err
 	}
 
@@ -123,27 +115,13 @@ func (c *client) Search(f Filters, opts ...rest.Option) (*SearchResponse, error)
 		return nil, err
 	}
 
-	res, err := c.hc.Send(req, opts...)
+	res, err := c.delegateSend(req, opts...)
 	if err != nil {
 		return nil, err
-	}
-	defer res.Body.Close()
-
-	read, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if res.StatusCode < 200 || res.StatusCode > 299 {
-		return nil, &rest.ErrorResponse{
-			StatusCode: res.StatusCode,
-			Message:    string(read),
-			Headers:    res.Header,
-		}
 	}
 
 	var formatted *SearchResponse
-	if err := json.Unmarshal(read, &formatted); err != nil {
+	if err := json.Unmarshal(res, &formatted); err != nil {
 		return nil, err
 	}
 
@@ -158,27 +136,13 @@ func (c *client) Get(id int64, opts ...rest.Option) (*Response, error) {
 		return nil, err
 	}
 
-	res, err := c.hc.Send(req, opts...)
+	res, err := c.delegateSend(req, opts...)
 	if err != nil {
 		return nil, err
-	}
-	defer res.Body.Close()
-
-	read, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if res.StatusCode < 200 || res.StatusCode > 299 {
-		return nil, &rest.ErrorResponse{
-			StatusCode: res.StatusCode,
-			Message:    string(read),
-			Headers:    res.Header,
-		}
 	}
 
 	formatted := &Response{}
-	if err := json.Unmarshal(read, &formatted); err != nil {
+	if err := json.Unmarshal(res, &formatted); err != nil {
 		return nil, err
 	}
 
@@ -200,27 +164,13 @@ func (c *client) Cancel(id int64, opts ...rest.Option) (*Response, error) {
 		return nil, err
 	}
 
-	res, err := c.hc.Send(req, opts...)
+	res, err := c.delegateSend(req, opts...)
 	if err != nil {
 		return nil, err
-	}
-	defer res.Body.Close()
-
-	read, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if res.StatusCode < 200 || res.StatusCode > 299 {
-		return nil, &rest.ErrorResponse{
-			StatusCode: res.StatusCode,
-			Message:    string(read),
-			Headers:    res.Header,
-		}
 	}
 
 	formatted := &Response{}
-	if err := json.Unmarshal(read, &formatted); err != nil {
+	if err := json.Unmarshal(res, &formatted); err != nil {
 		return nil, err
 	}
 
@@ -242,27 +192,13 @@ func (c *client) Capture(id int64, opts ...rest.Option) (*Response, error) {
 		return nil, err
 	}
 
-	res, err := c.hc.Send(req, opts...)
+	res, err := c.delegateSend(req, opts...)
 	if err != nil {
 		return nil, err
-	}
-	defer res.Body.Close()
-
-	read, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	if res.StatusCode < 200 || res.StatusCode > 299 {
-		return nil, &rest.ErrorResponse{
-			StatusCode: res.StatusCode,
-			Message:    string(read),
-			Headers:    res.Header,
-		}
 	}
 
 	formatted := &Response{}
-	if err := json.Unmarshal(read, &formatted); err != nil {
+	if err := json.Unmarshal(res, &formatted); err != nil {
 		return nil, err
 	}
 
@@ -284,29 +220,45 @@ func (c *client) CaptureAmount(id int64, amount float64, opts ...rest.Option) (*
 		return nil, err
 	}
 
-	res, err := c.hc.Send(req, opts...)
+	res, err := c.delegateSend(req, opts...)
 	if err != nil {
 		return nil, err
 	}
+
+	formatted := &Response{}
+	if err := json.Unmarshal(res, &formatted); err != nil {
+		return nil, err
+	}
+
+	return formatted, nil
+}
+
+func (c *client) delegateSend(req *http.Request, opts ...rest.Option) ([]byte, error) {
+	res, err := c.hc.Send(req, opts...)
+	if err != nil {
+		return nil, &rest.ErrorResponse{
+			StatusCode: res.StatusCode,
+			Message:    "error sending request: " + err.Error(),
+		}
+	}
 	defer res.Body.Close()
 
-	read, err := io.ReadAll(res.Body)
+	response, err := io.ReadAll(res.Body)
 	if err != nil {
-		return nil, err
+		return nil, &rest.ErrorResponse{
+			StatusCode: res.StatusCode,
+			Message:    "error reading response body: " + err.Error(),
+			Headers:    res.Header,
+		}
 	}
 
 	if res.StatusCode < 200 || res.StatusCode > 299 {
 		return nil, &rest.ErrorResponse{
 			StatusCode: res.StatusCode,
-			Message:    string(read),
+			Message:    string(response),
 			Headers:    res.Header,
 		}
 	}
 
-	formatted := &Response{}
-	if err := json.Unmarshal(read, &formatted); err != nil {
-		return nil, err
-	}
-
-	return formatted, nil
+	return response, nil
 }
