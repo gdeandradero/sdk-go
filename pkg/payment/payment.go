@@ -2,12 +2,12 @@ package payment
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 
+	"github.com/gdeandradero/sdk-go/pkg"
 	"github.com/gdeandradero/sdk-go/pkg/http/rest"
 )
 
@@ -62,12 +62,12 @@ type Client interface {
 
 // client is the implementation of Client.
 type client struct {
-	hc rest.Client
+	mpc pkg.MercadoPagoClient
 }
 
 // NewClient returns a new Payments API Client.
 func NewClient() Client {
-	return &client{hc: rest.Instance()}
+	return &client{mpc: pkg.NewMercadoPagoClient()}
 }
 
 func (c *client) Create(dto Request, opts ...rest.Option) (*Response, error) {
@@ -88,7 +88,7 @@ func (c *client) Create(dto Request, opts ...rest.Option) (*Response, error) {
 		}
 	}
 
-	res, err := c.delegateSend(req, opts...)
+	res, err := c.mpc.Send(req, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func (c *client) Search(f Filters, opts ...rest.Option) (*SearchResponse, error)
 		return nil, err
 	}
 
-	res, err := c.delegateSend(req, opts...)
+	res, err := c.mpc.Send(req, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +136,7 @@ func (c *client) Get(id int64, opts ...rest.Option) (*Response, error) {
 		return nil, err
 	}
 
-	res, err := c.delegateSend(req, opts...)
+	res, err := c.mpc.Send(req, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +164,7 @@ func (c *client) Cancel(id int64, opts ...rest.Option) (*Response, error) {
 		return nil, err
 	}
 
-	res, err := c.delegateSend(req, opts...)
+	res, err := c.mpc.Send(req, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +192,7 @@ func (c *client) Capture(id int64, opts ...rest.Option) (*Response, error) {
 		return nil, err
 	}
 
-	res, err := c.delegateSend(req, opts...)
+	res, err := c.mpc.Send(req, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +220,7 @@ func (c *client) CaptureAmount(id int64, amount float64, opts ...rest.Option) (*
 		return nil, err
 	}
 
-	res, err := c.delegateSend(req, opts...)
+	res, err := c.mpc.Send(req, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -231,34 +231,4 @@ func (c *client) CaptureAmount(id int64, amount float64, opts ...rest.Option) (*
 	}
 
 	return formatted, nil
-}
-
-func (c *client) delegateSend(req *http.Request, opts ...rest.Option) ([]byte, error) {
-	res, err := c.hc.Send(req, opts...)
-	if err != nil {
-		return nil, &rest.ErrorResponse{
-			StatusCode: res.StatusCode,
-			Message:    "error sending request: " + err.Error(),
-		}
-	}
-	defer res.Body.Close()
-
-	response, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, &rest.ErrorResponse{
-			StatusCode: res.StatusCode,
-			Message:    "error reading response body: " + err.Error(),
-			Headers:    res.Header,
-		}
-	}
-
-	if res.StatusCode < 200 || res.StatusCode > 299 {
-		return nil, &rest.ErrorResponse{
-			StatusCode: res.StatusCode,
-			Message:    string(response),
-			Headers:    res.Header,
-		}
-	}
-
-	return response, nil
 }
