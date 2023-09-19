@@ -1,26 +1,26 @@
-package pkg
+package mpclient
 
 import (
 	"io"
 	"net/http"
 
-	"github.com/gdeandradero/sdk-go/pkg/http/rest"
+	"github.com/gdeandradero/sdk-go/pkg/mpclient/rest"
 )
 
-type MercadoPagoClient interface {
-	Send(req *http.Request, opts ...rest.Option) ([]byte, error)
+type MercadoPago interface {
+	SendRest(req *http.Request, opts ...rest.Option) ([]byte, error)
 }
 
 type client struct {
-	hc rest.Client
+	rc rest.Client
 }
 
-func NewMercadoPagoClient() MercadoPagoClient {
-	return &client{hc: rest.Instance()}
+func New() MercadoPago {
+	return &client{rc: rest.Instance()}
 }
 
-func (c *client) Send(req *http.Request, opts ...rest.Option) ([]byte, error) {
-	res, err := c.hc.Send(req, opts...)
+func (c *client) SendRest(req *http.Request, opts ...rest.Option) ([]byte, error) {
+	res, err := c.rc.Send(req, opts...)
 	if err != nil {
 		return nil, &rest.ErrorResponse{
 			StatusCode: res.StatusCode,

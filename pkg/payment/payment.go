@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gdeandradero/sdk-go/pkg"
-	"github.com/gdeandradero/sdk-go/pkg/http/rest"
+	"github.com/gdeandradero/sdk-go/pkg/mpclient"
+	"github.com/gdeandradero/sdk-go/pkg/mpclient/rest"
 )
 
 const (
@@ -62,12 +62,12 @@ type Client interface {
 
 // client is the implementation of Client.
 type client struct {
-	mpc pkg.MercadoPagoClient
+	mpc mpclient.MercadoPago
 }
 
 // NewClient returns a new Payments API Client.
 func NewClient() Client {
-	return &client{mpc: pkg.NewMercadoPagoClient()}
+	return &client{mpc: mpclient.New()}
 }
 
 func (c *client) Create(dto Request, opts ...rest.Option) (*Response, error) {
@@ -88,7 +88,7 @@ func (c *client) Create(dto Request, opts ...rest.Option) (*Response, error) {
 		}
 	}
 
-	res, err := c.mpc.Send(req, opts...)
+	res, err := c.mpc.SendRest(req, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +115,7 @@ func (c *client) Search(f Filters, opts ...rest.Option) (*SearchResponse, error)
 		return nil, err
 	}
 
-	res, err := c.mpc.Send(req, opts...)
+	res, err := c.mpc.SendRest(req, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -136,7 +136,7 @@ func (c *client) Get(id int64, opts ...rest.Option) (*Response, error) {
 		return nil, err
 	}
 
-	res, err := c.mpc.Send(req, opts...)
+	res, err := c.mpc.SendRest(req, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +164,7 @@ func (c *client) Cancel(id int64, opts ...rest.Option) (*Response, error) {
 		return nil, err
 	}
 
-	res, err := c.mpc.Send(req, opts...)
+	res, err := c.mpc.SendRest(req, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -192,7 +192,7 @@ func (c *client) Capture(id int64, opts ...rest.Option) (*Response, error) {
 		return nil, err
 	}
 
-	res, err := c.mpc.Send(req, opts...)
+	res, err := c.mpc.SendRest(req, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -220,7 +220,7 @@ func (c *client) CaptureAmount(id int64, amount float64, opts ...rest.Option) (*
 		return nil, err
 	}
 
-	res, err := c.mpc.Send(req, opts...)
+	res, err := c.mpc.SendRest(req, opts...)
 	if err != nil {
 		return nil, err
 	}

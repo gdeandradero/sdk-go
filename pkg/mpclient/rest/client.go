@@ -57,6 +57,6 @@ func (c *client) Send(req *http.Request, opts ...Option) (*http.Response, error)
 }
 
 func setDefaultHeaders(req *http.Request) {
-	req.Header.Add("authorization", config.AccessToken())
+	req.Header.Add("authorization", "Bearer "+config.AccessToken())
 	req.Header.Add("x-product-id", config.ProductID())
 }

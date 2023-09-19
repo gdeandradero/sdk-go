@@ -12,7 +12,7 @@ type mp struct {
 // New creates a new config.
 func New(accessToken string) {
 	config = &mp{
-		accessToken: "Bearer " + accessToken,
+		accessToken: accessToken,
 		productID:   "123",
 	}
 }
@@ -24,7 +24,7 @@ func AccessToken() string {
 
 // SetAccessToken sets the access token.
 func SetAccessToken(at string) {
-	config.accessToken = "Bearer " + at
+	config.accessToken = at
 }
 
 // ProductID returns the product ID.

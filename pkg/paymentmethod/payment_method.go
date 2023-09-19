@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/gdeandradero/sdk-go/pkg"
-	"github.com/gdeandradero/sdk-go/pkg/http/rest"
+	"github.com/gdeandradero/sdk-go/pkg/mpclient"
+	"github.com/gdeandradero/sdk-go/pkg/mpclient/rest"
 )
 
 const url = "https://api.mercadopago.com/v1/payment_methods"
@@ -22,12 +22,12 @@ type Client interface {
 
 // client is the implementation of Client.
 type client struct {
-	mpc pkg.MercadoPagoClient
+	mpc mpclient.MercadoPago
 }
 
 // NewClient returns a new Payment Methods API Client.
 func NewClient() Client {
-	return &client{mpc: pkg.NewMercadoPagoClient()}
+	return &client{mpc: mpclient.New()}
 }
 
 func (c *client) List(opts ...rest.Option) ([]Response, error) {
@@ -36,7 +36,7 @@ func (c *client) List(opts ...rest.Option) ([]Response, error) {
 		return nil, err
 	}
 
-	res, err := c.mpc.Send(req, opts...)
+	res, err := c.mpc.SendRest(req, opts...)
 	if err != nil {
 		return nil, err
 	}
