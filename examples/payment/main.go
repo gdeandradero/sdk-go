@@ -6,18 +6,19 @@ import (
 
 	"github.com/gdeandradero/sdk-go/pkg/config"
 	"github.com/gdeandradero/sdk-go/pkg/payment"
+	"github.com/google/uuid"
 )
 
 func main() {
 	config.New("TEST-640110472259637-071923-a761f639c4eb1f0835ff7611f3248628-793910800")
 
 	id := createPayment()
-	time.Sleep(2 * time.Second)
+	time.Sleep(5 * time.Second)
 	searchPayment()
 	getPayment(id)
 }
 
-var externalReference = "312931sadaddasddaasdadsaddsa29asdasdasdsaasdadsadsa3919321"
+var externalReference = uuid.New().String()
 
 func createPayment() int64 {
 	pc := payment.NewClient()
@@ -58,7 +59,9 @@ func searchPayment() {
 		return
 	}
 
-	fmt.Println(res.Results[0].ID)
+	for _, v := range res.Results {
+		fmt.Println(v.ID)
+	}
 }
 
 func getPayment(id int64) {

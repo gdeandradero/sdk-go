@@ -16,5 +16,7 @@ func main() {
 		panic(err)
 	}
 
-	fmt.Println(x)
+	for _, v := range x {
+		fmt.Println(v)
+	}
 }

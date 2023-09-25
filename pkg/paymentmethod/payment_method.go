@@ -2,10 +2,10 @@ package paymentmethod
 
 import (
 	"encoding/json"
-	"io"
 	"net/http"
 
-	"github.com/gdeandradero/sdk-go/pkg/http/rest"
+	"github.com/gdeandradero/sdk-go/pkg/mpclient"
+	"github.com/gdeandradero/sdk-go/pkg/mpclient/rest"
 )
 
 const url = "https://api.mercadopago.com/v1/payment_methods"
@@ -22,21 +22,22 @@ type Client interface {
 
 // client is the implementation of Client.
 type client struct {
-	hc rest.Client
+	mpc mpclient.MercadoPago
 }
 
 // NewClient returns a new Payment Methods API Client.
 func NewClient() Client {
-	return &client{hc: rest.Instance()}
+	return &client{mpc: mpclient.New()}
 }
 
 func (c *client) List(opts ...rest.Option) ([]Response, error) {
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
+	reqConfig := mpclient.RequestConfig{
+		Method: http.MethodGet,
+		URL:    url,
+		Body:   nil,
 	}
 
-	res, err := c.delegateSend(req, opts...)
+	res, err := c.mpc.SendRest(reqConfig, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -47,34 +48,4 @@ func (c *client) List(opts ...rest.Option) ([]Response, error) {
 	}
 
 	return formatted, nil
-}
-
-func (c *client) delegateSend(req *http.Request, opts ...rest.Option) ([]byte, error) {
-	res, err := c.hc.Send(req, opts...)
-	if err != nil {
-		return nil, &rest.ErrorResponse{
-			StatusCode: res.StatusCode,
-			Message:    "error sending request: " + err.Error(),
-		}
-	}
-	defer res.Body.Close()
-
-	response, err := io.ReadAll(res.Body)
-	if err != nil {
-		return nil, &rest.ErrorResponse{
-			StatusCode: res.StatusCode,
-			Message:    "error reading response body: " + err.Error(),
-			Headers:    res.Header,
-		}
-	}
-
-	if res.StatusCode < 200 || res.StatusCode > 299 {
-		return nil, &rest.ErrorResponse{
-			StatusCode: res.StatusCode,
-			Message:    string(response),
-			Headers:    res.Header,
-		}
-	}
-
-	return response, nil
 }
