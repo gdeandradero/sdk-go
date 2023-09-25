@@ -79,16 +79,13 @@ func (c *client) Create(dto Request, opts ...rest.Option) (*Response, error) {
 		}
 	}
 
-	reader := strings.NewReader(string(body))
-	req, err := http.NewRequest("POST", postURL, reader)
-	if err != nil {
-		return nil, &rest.ErrorResponse{
-			StatusCode: http.StatusInternalServerError,
-			Message:    "error creating request" + err.Error(),
-		}
+	reqConfig := mpclient.RequestConfig{
+		Method: http.MethodPost,
+		URL:    postURL,
+		Body:   strings.NewReader(string(body)),
 	}
 
-	res, err := c.mpc.SendRest(req, opts...)
+	res, err := c.mpc.SendRest(reqConfig, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -110,12 +107,13 @@ func (c *client) Search(f Filters, opts ...rest.Option) (*SearchResponse, error)
 	params.Add("begin_date", f.BeginDate)
 	params.Add("end_date", f.EndDate)
 
-	req, err := http.NewRequest("GET", searchURL+"?"+params.Encode(), nil)
-	if err != nil {
-		return nil, err
+	reqConfig := mpclient.RequestConfig{
+		Method: http.MethodGet,
+		URL:    searchURL + "?" + params.Encode(),
+		Body:   nil,
 	}
 
-	res, err := c.mpc.SendRest(req, opts...)
+	res, err := c.mpc.SendRest(reqConfig, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -130,13 +128,14 @@ func (c *client) Search(f Filters, opts ...rest.Option) (*SearchResponse, error)
 
 func (c *client) Get(id int64, opts ...rest.Option) (*Response, error) {
 	conv := strconv.Itoa(int(id))
-	url := strings.Replace(getURL, "{id}", conv, 1)
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
+
+	reqConfig := mpclient.RequestConfig{
+		Method: http.MethodGet,
+		URL:    strings.Replace(getURL, "{id}", conv, 1),
+		Body:   nil,
 	}
 
-	res, err := c.mpc.SendRest(req, opts...)
+	res, err := c.mpc.SendRest(reqConfig, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -156,15 +155,14 @@ func (c *client) Cancel(id int64, opts ...rest.Option) (*Response, error) {
 		return nil, err
 	}
 
-	reader := strings.NewReader(string(body))
 	conv := strconv.Itoa(int(id))
-	url := strings.Replace(putURL, "{id}", conv, 1)
-	req, err := http.NewRequest("PUT", url, reader)
-	if err != nil {
-		return nil, err
+	reqConfig := mpclient.RequestConfig{
+		Method: http.MethodPut,
+		URL:    strings.Replace(putURL, "{id}", conv, 1),
+		Body:   strings.NewReader(string(body)),
 	}
 
-	res, err := c.mpc.SendRest(req, opts...)
+	res, err := c.mpc.SendRest(reqConfig, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -184,15 +182,14 @@ func (c *client) Capture(id int64, opts ...rest.Option) (*Response, error) {
 		return nil, err
 	}
 
-	reader := strings.NewReader(string(body))
 	conv := strconv.Itoa(int(id))
-	url := strings.Replace(putURL, "{id}", conv, 1)
-	req, err := http.NewRequest("PUT", url, reader)
-	if err != nil {
-		return nil, err
+	reqConfig := mpclient.RequestConfig{
+		Method: http.MethodPut,
+		URL:    strings.Replace(putURL, "{id}", conv, 1),
+		Body:   strings.NewReader(string(body)),
 	}
 
-	res, err := c.mpc.SendRest(req, opts...)
+	res, err := c.mpc.SendRest(reqConfig, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -212,15 +209,14 @@ func (c *client) CaptureAmount(id int64, amount float64, opts ...rest.Option) (*
 		return nil, err
 	}
 
-	reader := strings.NewReader(string(body))
 	conv := strconv.Itoa(int(id))
-	url := strings.Replace(putURL, "{id}", conv, 1)
-	req, err := http.NewRequest("PUT", url, reader)
-	if err != nil {
-		return nil, err
+	reqConfig := mpclient.RequestConfig{
+		Method: http.MethodPut,
+		URL:    strings.Replace(putURL, "{id}", conv, 1),
+		Body:   strings.NewReader(string(body)),
 	}
 
-	res, err := c.mpc.SendRest(req, opts...)
+	res, err := c.mpc.SendRest(reqConfig, opts...)
 	if err != nil {
 		return nil, err
 	}

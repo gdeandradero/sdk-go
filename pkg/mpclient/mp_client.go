@@ -8,18 +8,33 @@ import (
 )
 
 type MercadoPago interface {
-	SendRest(req *http.Request, opts ...rest.Option) ([]byte, error)
+	SendRest(reqConfig RequestConfig, opts ...rest.Option) ([]byte, error)
 }
 
 type client struct {
 	rc rest.Client
 }
 
+type RequestConfig struct {
+	Method string
+	URL    string
+
+	Body io.Reader
+}
+
 func New() MercadoPago {
 	return &client{rc: rest.Instance()}
 }
 
-func (c *client) SendRest(req *http.Request, opts ...rest.Option) ([]byte, error) {
+func (c *client) SendRest(reqConfig RequestConfig, opts ...rest.Option) ([]byte, error) {
+	req, err := http.NewRequest(reqConfig.Method, reqConfig.URL, reqConfig.Body)
+	if err != nil {
+		return nil, &rest.ErrorResponse{
+			StatusCode: http.StatusInternalServerError,
+			Message:    "error creating request: " + err.Error(),
+		}
+	}
+
 	res, err := c.rc.Send(req, opts...)
 	if err != nil {
 		return nil, &rest.ErrorResponse{

@@ -31,12 +31,13 @@ func NewClient() Client {
 }
 
 func (c *client) List(opts ...rest.Option) ([]Response, error) {
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, err
+	reqConfig := mpclient.RequestConfig{
+		Method: http.MethodGet,
+		URL:    url,
+		Body:   nil,
 	}
 
-	res, err := c.mpc.SendRest(req, opts...)
+	res, err := c.mpc.SendRest(reqConfig, opts...)
 	if err != nil {
 		return nil, err
 	}

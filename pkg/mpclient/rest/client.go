@@ -5,15 +5,22 @@ import (
 	"net/http"
 
 	"github.com/gdeandradero/sdk-go/pkg/config"
+	"github.com/google/uuid"
 )
 
-var instance Client
+var (
+	instance Client
+
+	authorizationHeader = http.CanonicalHeaderKey("authorization")
+	productIDHeader     = http.CanonicalHeaderKey("x-product-id")
+	idempotencyHeader   = http.CanonicalHeaderKey("x-idempotency-key")
+)
 
 // Client is the interface that wraps the basic Send method.
 type Client interface {
 	/*
 		Send sends a request to the API.
-		opts are optional parameters to be used in the request, if you do not need, you do not need to pass nothing.
+		opts are optional parameters to be used in the request, if you do not need, ignore it.
 	*/
 	Send(req *http.Request, opts ...Option) (*http.Response, error)
 }
@@ -48,7 +55,8 @@ func (c *client) Send(req *http.Request, opts ...Option) (*http.Response, error)
 	}
 	if options.customHeaders != nil {
 		for k, v := range options.customHeaders {
-			req.Header[k] = v
+			canonicalKey := http.CanonicalHeaderKey(k)
+			req.Header[canonicalKey] = v
 		}
 	}
 	setDefaultHeaders(req)
@@ -57,6 +65,10 @@ func (c *client) Send(req *http.Request, opts ...Option) (*http.Response, error)
 }
 
 func setDefaultHeaders(req *http.Request) {
-	req.Header.Add("authorization", "Bearer "+config.AccessToken())
-	req.Header.Add("x-product-id", config.ProductID())
+	req.Header.Add(authorizationHeader, "Bearer "+config.AccessToken())
+	req.Header.Add(productIDHeader, config.ProductID())
+
+	if _, ok := req.Header[idempotencyHeader]; !ok {
+		req.Header.Add(idempotencyHeader, uuid.New().String())
+	}
 }
