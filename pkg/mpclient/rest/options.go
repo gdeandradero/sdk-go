@@ -6,8 +6,11 @@ import (
 )
 
 type options struct {
+	retryQuantity int
+
 	timeout       time.Duration
 	customHeaders http.Header
+	retryWait     time.Duration
 }
 
 type Option interface {
@@ -32,4 +35,24 @@ func (c customHeadersOption) apply(opts *options) {
 
 func WithCustomHeaders(h http.Header) Option {
 	return customHeadersOption(h)
+}
+
+type retryQuantityOption int
+
+func (rq retryQuantityOption) apply(opts *options) {
+	opts.retryQuantity = int(rq)
+}
+
+func WithRetryQuantity(q int) Option {
+	return retryQuantityOption(q)
+}
+
+type retryWaitOption time.Duration
+
+func (rw retryWaitOption) apply(opts *options) {
+	opts.retryWait = time.Duration(rw)
+}
+
+func WithRetryWait(t time.Duration) Option {
+	return retryWaitOption(t)
 }

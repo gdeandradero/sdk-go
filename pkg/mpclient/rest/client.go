@@ -3,13 +3,16 @@ package rest
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/gdeandradero/sdk-go/pkg/config"
 	"github.com/google/uuid"
 )
 
+const defaultTimeout = time.Duration(time.Second * 30)
+
 var (
-	instance Client
+	currentClient *client
 
 	authorizationHeader = http.CanonicalHeaderKey("authorization")
 	productIDHeader     = http.CanonicalHeaderKey("x-product-id")
@@ -28,31 +31,55 @@ type Client interface {
 // client is the implementation of Client.
 type client struct {
 	hc *http.Client
+	rc RetryClient
 }
 
 // Instance returns a current Client instance or create a new one.
 func Instance() Client {
-	if instance == nil {
-		instance = &client{hc: &http.Client{}}
+	if currentClient == nil {
+		currentClient = &client{
+			hc: &http.Client{},
+			rc: &retry{},
+		}
 	}
-	return instance
+	return currentClient
 }
 
 // SetCustomHTTPClient sets a custom http.Client to be used by the Client.
 func SetCustomHTTPClient(chc *http.Client) {
-	instance = &client{hc: chc}
+	currentClient.hc = chc
+}
+
+// SetCustomRetryClient sets a custom RetryClient to be used by the Client.
+func SetCustomRetryClient(crc RetryClient) {
+	currentClient.rc = crc
 }
 
 func (c *client) Send(req *http.Request, opts ...Option) (*http.Response, error) {
+	c.prepareRequest(req, opts...)
+
+	res, err := c.hc.Do(req)
+	defer c.hc.CloseIdleConnections()
+	if shouldRetry(res, err) {
+		res, err = c.rc.Retry(req, c.hc, opts...)
+	}
+
+	return res, err
+}
+
+func (c *client) prepareRequest(req *http.Request, opts ...Option) {
+	timeout := defaultTimeout
+
 	options := &options{}
 	for _, opt := range opts {
 		opt.apply(options)
 	}
 	if options.timeout > 0 {
-		ctx, cancel := context.WithTimeout(req.Context(), options.timeout)
-		defer cancel()
-		req = req.WithContext(ctx)
+		timeout = options.timeout
 	}
+	ctx, cancel := context.WithTimeout(req.Context(), timeout)
+	defer cancel()
+	req = req.WithContext(ctx)
 	if options.customHeaders != nil {
 		for k, v := range options.customHeaders {
 			canonicalKey := http.CanonicalHeaderKey(k)
@@ -60,8 +87,6 @@ func (c *client) Send(req *http.Request, opts ...Option) (*http.Response, error)
 		}
 	}
 	setDefaultHeaders(req)
-
-	return c.hc.Do(req)
 }
 
 func setDefaultHeaders(req *http.Request) {
@@ -71,4 +96,8 @@ func setDefaultHeaders(req *http.Request) {
 	if _, ok := req.Header[idempotencyHeader]; !ok {
 		req.Header.Add(idempotencyHeader, uuid.New().String())
 	}
+}
+
+func shouldRetry(res *http.Response, err error) bool {
+	return err != nil || res.StatusCode >= http.StatusInternalServerError
 }
