@@ -47,11 +47,17 @@ func Instance() Client {
 
 // SetCustomHTTPClient sets a custom http.Client to be used by the Client.
 func SetCustomHTTPClient(chc *http.Client) {
+	if currentClient == nil {
+		_ = Instance()
+	}
 	currentClient.hc = chc
 }
 
 // SetCustomRetryClient sets a custom RetryClient to be used by the Client.
 func SetCustomRetryClient(crc RetryClient) {
+	if currentClient == nil {
+		_ = Instance()
+	}
 	currentClient.rc = crc
 }
 
