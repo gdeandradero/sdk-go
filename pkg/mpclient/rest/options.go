@@ -6,9 +6,10 @@ import (
 )
 
 type options struct {
-	retryQuantity int
+	maxRetries int
 
-	retryWait     time.Duration
+	maxBackoff    time.Duration
+	retryDelay    time.Duration
 	timeout       time.Duration
 	customHeaders http.Header
 }
@@ -17,24 +18,34 @@ type Option interface {
 	apply(*options)
 }
 
-type retryQuantityOption int
+type maxRetriesOption int
 
-func (rq retryQuantityOption) apply(opts *options) {
-	opts.retryQuantity = int(rq)
+func (m maxRetriesOption) apply(opts *options) {
+	opts.maxRetries = int(m)
 }
 
-func WithRetryQuantity(q int) Option {
-	return retryQuantityOption(q)
+func WithMaxRetries(m int) Option {
+	return maxRetriesOption(m)
 }
 
-type retryWaitOption time.Duration
+type maxBackoffOption time.Duration
 
-func (rw retryWaitOption) apply(opts *options) {
-	opts.retryWait = time.Duration(rw)
+func (m maxBackoffOption) apply(opts *options) {
+	opts.maxBackoff = time.Duration(m)
 }
 
-func WithRetryWait(t time.Duration) Option {
-	return retryWaitOption(t)
+func WithMaxBackoff(t time.Duration) Option {
+	return maxBackoffOption(t)
+}
+
+type retryDelayOption time.Duration
+
+func (r retryDelayOption) apply(opts *options) {
+	opts.retryDelay = time.Duration(r)
+}
+
+func WithRetryDelay(t time.Duration) Option {
+	return retryDelayOption(t)
 }
 
 type timeoutOption time.Duration

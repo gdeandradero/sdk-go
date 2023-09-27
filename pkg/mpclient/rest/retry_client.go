@@ -1,13 +1,15 @@
 package rest
 
 import (
+	"math"
 	"net/http"
 	"time"
 )
 
 const (
-	defaultRetryQtt = 3
-	defaultWait     = time.Second * 5
+	defaultMaxRetries = 5
+	defaultMaxBackoff = time.Minute
+	defaultRetryDelay = time.Second
 )
 
 // RetryClient is the interface that defines retry signature.
@@ -20,36 +22,37 @@ type retry struct{}
 
 func (*retry) Retry(req *http.Request, httpClient *http.Client, opts ...Option) (*http.Response, error) {
 	var (
-		retryQtt               = defaultRetryQtt
-		wait     time.Duration = defaultWait
-		res      *http.Response
-		err      error
+		maxRetries = defaultMaxRetries
+		maxBackoff = defaultMaxBackoff
+		retryDelay = defaultRetryDelay
+		res        *http.Response
+		err        error
 	)
 
 	options := &options{}
 	for _, opt := range opts {
 		opt.apply(options)
 	}
-	if options.retryQuantity > 0 {
-		retryQtt = options.retryQuantity
+	if options.maxRetries > 0 {
+		maxRetries = options.maxRetries
 	}
-	if options.retryWait > 0 {
-		wait = options.retryWait
+	if options.maxBackoff > 0 {
+		maxBackoff = options.maxBackoff
+	}
+	if options.retryDelay > 0 {
+		retryDelay = options.retryDelay
 	}
 
-	for i := 0; i < retryQtt; i++ {
-		timer := time.NewTimer(wait)
-		select {
-		case <-req.Context().Done():
-			timer.Stop()
-			return nil, req.Context().Err()
-		case <-timer.C:
-		}
+	for i := 0; i < maxRetries; i++ {
+		time.Sleep(retryDelay)
 
 		res, err = httpClient.Do(req)
 		if shouldStop(res, err) {
 			break
 		}
+
+		newDelay := float64(retryDelay * 2)
+		retryDelay = time.Duration(math.Min(newDelay, float64(maxBackoff)))
 	}
 
 	return res, err
