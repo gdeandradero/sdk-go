@@ -65,7 +65,6 @@ func (c *client) Send(req *http.Request, opts ...Option) (*http.Response, error)
 	c.prepareRequest(req, opts...)
 
 	res, err := c.hc.Do(req)
-	defer c.hc.CloseIdleConnections()
 	if shouldRetry(res, err) {
 		res, err = c.rc.Retry(req, c.hc, opts...)
 	}
