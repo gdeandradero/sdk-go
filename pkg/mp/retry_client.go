@@ -1,4 +1,4 @@
-package rest
+package mp
 
 import (
 	"math"
@@ -17,10 +17,10 @@ type RetryClient interface {
 	Retry(req *http.Request, httpClient *http.Client, opts ...Option) (*http.Response, error)
 }
 
-// retry is the default implementation of RetryClient.
-type retry struct{}
+// retryClient is the default implementation of RetryClient.
+type retryClient struct{}
 
-func (*retry) Retry(req *http.Request, httpClient *http.Client, opts ...Option) (*http.Response, error) {
+func (*retryClient) Retry(req *http.Request, httpClient *http.Client, opts ...Option) (*http.Response, error) {
 	var (
 		maxRetries = defaultMaxRetries
 		maxBackoff = defaultMaxBackoff

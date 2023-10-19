@@ -1,4 +1,4 @@
-package rest
+package mp
 
 import (
 	"net/http"
