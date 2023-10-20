@@ -1,4 +1,4 @@
-package mp
+package rest
 
 import (
 	"context"
@@ -9,7 +9,11 @@ import (
 	"github.com/google/uuid"
 )
 
-const defaultTimeout = time.Duration(time.Second * 30)
+const (
+	productID = "123"
+
+	defaultTimeout = time.Duration(time.Second * 30)
+)
 
 var (
 	authorizationHeader = http.CanonicalHeaderKey("authorization")
@@ -17,8 +21,10 @@ var (
 	idempotencyHeader   = http.CanonicalHeaderKey("x-idempotency-key")
 )
 
-// RestClient is the interface that wraps the basic Send method.
-type RestClient interface {
+var c *client
+
+// Client is the interface that wraps the basic Send method.
+type Client interface {
 	/*
 		Send sends a request to the API.
 		opts are optional parameters to be used in the request, if you do not need, ignore it.
@@ -27,14 +33,42 @@ type RestClient interface {
 }
 
 // client is the implementation of Client.
-type restClient struct{}
+type client struct {
+	accessToken string
+	productID   string
 
-func (c *restClient) Send(req *http.Request, opts ...Option) ([]byte, error) {
-	c.prepareRequest(req, opts...)
+	httpClient  *http.Client
+	retryClient RetryClient
+}
 
-	res, err := config.httpClient.Do(req)
+func NewClient(at string) Client {
+	c = &client{
+		accessToken: at,
+		productID:   productID,
+		httpClient:  &http.Client{},
+		retryClient: &retryClient{},
+	}
+	return c
+}
+
+func SetAT(at string) {
+	c.accessToken = at
+}
+
+func SetHC(hc *http.Client) {
+	c.httpClient = hc
+}
+
+func SetRC(rc RetryClient) {
+	c.retryClient = rc
+}
+
+func (cl *client) Send(req *http.Request, opts ...Option) ([]byte, error) {
+	cl.prepareRequest(req, opts...)
+
+	res, err := c.httpClient.Do(req)
 	if shouldRetry(res, err) {
-		res, err = config.retryClient.Retry(req, config.httpClient, opts...)
+		res, err = c.retryClient.Retry(req, c.httpClient, opts...)
 	}
 	if err != nil {
 		return nil, &ErrorResponse{
@@ -65,7 +99,7 @@ func (c *restClient) Send(req *http.Request, opts ...Option) ([]byte, error) {
 	return response, nil
 }
 
-func (c *restClient) prepareRequest(req *http.Request, opts ...Option) {
+func (cl *client) prepareRequest(req *http.Request, opts ...Option) {
 	timeout := defaultTimeout
 
 	options := &options{}
@@ -88,8 +122,8 @@ func (c *restClient) prepareRequest(req *http.Request, opts ...Option) {
 }
 
 func setDefaultHeaders(req *http.Request) {
-	req.Header.Add(authorizationHeader, "Bearer "+config.accessToken)
-	req.Header.Add(productIDHeader, config.productID)
+	req.Header.Add(authorizationHeader, "Bearer "+c.accessToken)
+	req.Header.Add(productIDHeader, c.productID)
 
 	if _, ok := req.Header[idempotencyHeader]; !ok {
 		req.Header.Add(idempotencyHeader, uuid.New().String())

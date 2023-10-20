@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gdeandradero/sdk-go/pkg/mp"
+	"github.com/gdeandradero/sdk-go/pkg/mp/rest"
 )
 
 const (
@@ -24,53 +24,57 @@ type Client interface {
 		It is a post request to the endpoint: https://api.mercadopago.com/v1/payments
 		Reference: https://www.mercadopago.com.br/developers/pt/reference/payments/_payments/post/
 	*/
-	Create(dto Request, opts ...mp.Option) (*Response, error)
+	Create(dto Request, opts ...rest.Option) (*Response, error)
 
 	/*
 		Search searches for payments.
 		It is a get request to the endpoint: https://api.mercadopago.com/v1/payments/search
 		Reference: https://www.mercadopago.com.br/developers/pt/reference/payments/_payments_search/get/
 	*/
-	Search(f Filters, opts ...mp.Option) (*SearchResponse, error)
+	Search(f Filters, opts ...rest.Option) (*SearchResponse, error)
 
 	/*
 		Get gets a payment by its ID.
 		It is a get request to the endpoint: https://api.mercadopago.com/v1/payments/{id}
 		Reference: https://www.mercadopago.com.br/developers/pt/reference/payments/_payments_id/get/
 	*/
-	Get(id int64, opts ...mp.Option) (*Response, error)
+	Get(id int64, opts ...rest.Option) (*Response, error)
 
 	/*
 		Cancel cancels a payment by its ID.
 		It is a put request to the endpoint: https://api.mercadopago.com/v1/payments/{id}
 	*/
-	Cancel(id int64, opts ...mp.Option) (*Response, error)
+	Cancel(id int64, opts ...rest.Option) (*Response, error)
 
 	/*
 		Capture captures a payment by its ID.
 		It is a put request to the endpoint: https://api.mercadopago.com/v1/payments/{id}
 	*/
-	Capture(id int64, opts ...mp.Option) (*Response, error)
+	Capture(id int64, opts ...rest.Option) (*Response, error)
 
 	/*
 		CaptureAmount captures amount of a payment by its ID.
 		It is a put request to the endpoint: https://api.mercadopago.com/v1/payments/{id}
 	*/
-	CaptureAmount(id int64, amount float64, opts ...mp.Option) (*Response, error)
+	CaptureAmount(id int64, amount float64, opts ...rest.Option) (*Response, error)
 }
 
 // client is the implementation of Client.
-type client struct{}
-
-// NewClient returns a new Payments API Client.
-func NewClient() Client {
-	return &client{}
+type client struct {
+	rc rest.Client
 }
 
-func (c *client) Create(dto Request, opts ...mp.Option) (*Response, error) {
+// NewClient returns a new Payments API Client.
+func NewClient(restClient rest.Client) Client {
+	return &client{
+		rc: restClient,
+	}
+}
+
+func (c *client) Create(dto Request, opts ...rest.Option) (*Response, error) {
 	body, err := json.Marshal(&dto)
 	if err != nil {
-		return nil, &mp.ErrorResponse{
+		return nil, &rest.ErrorResponse{
 			StatusCode: http.StatusInternalServerError,
 			Message:    "error marshaling request body: " + err.Error(),
 		}
@@ -78,13 +82,13 @@ func (c *client) Create(dto Request, opts ...mp.Option) (*Response, error) {
 
 	req, err := http.NewRequest(http.MethodPost, postURL, strings.NewReader(string(body)))
 	if err != nil {
-		return nil, &mp.ErrorResponse{
+		return nil, &rest.ErrorResponse{
 			StatusCode: http.StatusInternalServerError,
 			Message:    "error creating request: " + err.Error(),
 		}
 	}
 
-	res, err := mp.GetRestClient().Send(req, opts...)
+	res, err := c.rc.Send(req, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +101,7 @@ func (c *client) Create(dto Request, opts ...mp.Option) (*Response, error) {
 	return formatted, nil
 }
 
-func (c *client) Search(f Filters, opts ...mp.Option) (*SearchResponse, error) {
+func (c *client) Search(f Filters, opts ...rest.Option) (*SearchResponse, error) {
 	params := url.Values{}
 	params.Add("sort", f.Sort)
 	params.Add("criteria", f.Criteria)
@@ -108,13 +112,13 @@ func (c *client) Search(f Filters, opts ...mp.Option) (*SearchResponse, error) {
 
 	req, err := http.NewRequest(http.MethodGet, searchURL+"?"+params.Encode(), nil)
 	if err != nil {
-		return nil, &mp.ErrorResponse{
+		return nil, &rest.ErrorResponse{
 			StatusCode: http.StatusInternalServerError,
 			Message:    "error creating request: " + err.Error(),
 		}
 	}
 
-	res, err := mp.GetRestClient().Send(req, opts...)
+	res, err := c.rc.Send(req, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -127,18 +131,18 @@ func (c *client) Search(f Filters, opts ...mp.Option) (*SearchResponse, error) {
 	return formatted, nil
 }
 
-func (c *client) Get(id int64, opts ...mp.Option) (*Response, error) {
+func (c *client) Get(id int64, opts ...rest.Option) (*Response, error) {
 	conv := strconv.Itoa(int(id))
 
 	req, err := http.NewRequest(http.MethodGet, strings.Replace(getURL, "{id}", conv, 1), nil)
 	if err != nil {
-		return nil, &mp.ErrorResponse{
+		return nil, &rest.ErrorResponse{
 			StatusCode: http.StatusInternalServerError,
 			Message:    "error creating request: " + err.Error(),
 		}
 	}
 
-	res, err := mp.GetRestClient().Send(req, opts...)
+	res, err := c.rc.Send(req, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -151,7 +155,7 @@ func (c *client) Get(id int64, opts ...mp.Option) (*Response, error) {
 	return formatted, nil
 }
 
-func (c *client) Cancel(id int64, opts ...mp.Option) (*Response, error) {
+func (c *client) Cancel(id int64, opts ...rest.Option) (*Response, error) {
 	dto := &CancelRequest{Status: "cancelled"}
 	body, err := json.Marshal(dto)
 	if err != nil {
@@ -161,13 +165,13 @@ func (c *client) Cancel(id int64, opts ...mp.Option) (*Response, error) {
 	conv := strconv.Itoa(int(id))
 	req, err := http.NewRequest(http.MethodPut, strings.Replace(putURL, "{id}", conv, 1), strings.NewReader(string(body)))
 	if err != nil {
-		return nil, &mp.ErrorResponse{
+		return nil, &rest.ErrorResponse{
 			StatusCode: http.StatusInternalServerError,
 			Message:    "error creating request: " + err.Error(),
 		}
 	}
 
-	res, err := mp.GetRestClient().Send(req, opts...)
+	res, err := c.rc.Send(req, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -180,7 +184,7 @@ func (c *client) Cancel(id int64, opts ...mp.Option) (*Response, error) {
 	return formatted, nil
 }
 
-func (c *client) Capture(id int64, opts ...mp.Option) (*Response, error) {
+func (c *client) Capture(id int64, opts ...rest.Option) (*Response, error) {
 	dto := &CaptureRequest{Capture: true}
 	body, err := json.Marshal(dto)
 	if err != nil {
@@ -190,13 +194,13 @@ func (c *client) Capture(id int64, opts ...mp.Option) (*Response, error) {
 	conv := strconv.Itoa(int(id))
 	req, err := http.NewRequest(http.MethodPut, strings.Replace(putURL, "{id}", conv, 1), strings.NewReader(string(body)))
 	if err != nil {
-		return nil, &mp.ErrorResponse{
+		return nil, &rest.ErrorResponse{
 			StatusCode: http.StatusInternalServerError,
 			Message:    "error creating request: " + err.Error(),
 		}
 	}
 
-	res, err := mp.GetRestClient().Send(req, opts...)
+	res, err := c.rc.Send(req, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -209,7 +213,7 @@ func (c *client) Capture(id int64, opts ...mp.Option) (*Response, error) {
 	return formatted, nil
 }
 
-func (c *client) CaptureAmount(id int64, amount float64, opts ...mp.Option) (*Response, error) {
+func (c *client) CaptureAmount(id int64, amount float64, opts ...rest.Option) (*Response, error) {
 	dto := &CaptureRequest{TransactionAmount: amount, Capture: true}
 	body, err := json.Marshal(dto)
 	if err != nil {
@@ -219,13 +223,13 @@ func (c *client) CaptureAmount(id int64, amount float64, opts ...mp.Option) (*Re
 	conv := strconv.Itoa(int(id))
 	req, err := http.NewRequest(http.MethodPut, strings.Replace(putURL, "{id}", conv, 1), strings.NewReader(string(body)))
 	if err != nil {
-		return nil, &mp.ErrorResponse{
+		return nil, &rest.ErrorResponse{
 			StatusCode: http.StatusInternalServerError,
 			Message:    "error creating request: " + err.Error(),
 		}
 	}
 
-	res, err := mp.GetRestClient().Send(req, opts...)
+	res, err := c.rc.Send(req, opts...)
 	if err != nil {
 		return nil, err
 	}

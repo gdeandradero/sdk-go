@@ -1,41 +1,27 @@
 package mp
 
-import "net/http"
+import (
+	"net/http"
 
-// config is an mp instance.
-var config = &mp{
-	productID: "123",
+	"github.com/gdeandradero/sdk-go/pkg/mp/rest"
+)
 
-	restClient:  &restClient{},
-	httpClient:  &http.Client{},
-	retryClient: &retryClient{},
-}
-
-// mp represents the config.
-type mp struct {
-	accessToken string
-	productID   string
-
-	restClient  RestClient
-	httpClient  *http.Client
-	retryClient RetryClient
+// NewRestClient returns a new rest client.
+func NewRestClient(accessToken string) rest.Client {
+	return rest.NewClient(accessToken)
 }
 
 // SetAccessToken sets the access token.
 func SetAccessToken(at string) {
-	config.accessToken = at
+	rest.SetAT(at)
 }
 
-func GetRestClient() RestClient {
-	return config.restClient
+// SetCustomHTTPClient sets a custom http client.
+func SetCustomHTTPClient(hc *http.Client) {
+	rest.SetHC(hc)
 }
 
-// SetHTTPClient sets a custom http client.
-func SetHTTPClient(hc *http.Client) {
-	config.httpClient = hc
-}
-
-// SetRetryClient sets a custom retry client.
-func SetRetryClient(rc RetryClient) {
-	config.retryClient = rc
+// SetCustomRetryClient sets a custom retry client.
+func SetCustomRetryClient(rc rest.RetryClient) {
+	rest.SetRC(rc)
 }

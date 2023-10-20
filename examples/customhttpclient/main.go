@@ -10,14 +10,14 @@ import (
 )
 
 func main() {
-	mp.SetAccessToken("TEST-640110472259637-071923-a761f639c4eb1f0835ff7611f3248628-793910800")
+	rc := mp.NewRestClient("TEST-640110472259637-071923-a761f639c4eb1f0835ff7611f3248628-793910800")
 
 	proxyURL, _ := url.Parse("http://someurl")
 	customClient := &http.Client{Transport: &http.Transport{Proxy: http.ProxyURL(proxyURL)}}
 
-	mp.SetHTTPClient(customClient)
+	mp.SetCustomHTTPClient(customClient)
 
-	pmc := paymentmethod.NewClient()
+	pmc := paymentmethod.NewClient(rc)
 	res, err := pmc.List()
 	if err != nil {
 		panic(err)
