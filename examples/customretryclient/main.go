@@ -2,13 +2,25 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/gdeandradero/sdk-go/pkg/mp"
+	"github.com/gdeandradero/sdk-go/pkg/mp/rest"
 	"github.com/gdeandradero/sdk-go/pkg/paymentmethod"
 )
 
+type customRetryClient struct{}
+
+func (*customRetryClient) Retry(req *http.Request, httpClient *http.Client, opts ...rest.Option) (*http.Response, error) {
+	// some retry implementation
+	return nil, nil
+}
+
 func main() {
 	rc := mp.NewRestClient("TEST-640110472259637-071923-a761f639c4eb1f0835ff7611f3248628-793910800")
+
+	customRetryClient := &customRetryClient{}
+	mp.SetCustomRetryClient(customRetryClient)
 
 	pmc := paymentmethod.NewClient(rc)
 	res, err := pmc.List()

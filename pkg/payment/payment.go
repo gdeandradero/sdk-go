@@ -7,8 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gdeandradero/sdk-go/pkg/mpclient"
-	"github.com/gdeandradero/sdk-go/pkg/mpclient/rest"
+	"github.com/gdeandradero/sdk-go/pkg/mp/rest"
 )
 
 const (
@@ -62,12 +61,14 @@ type Client interface {
 
 // client is the implementation of Client.
 type client struct {
-	mpc mpclient.MercadoPago
+	rc rest.Client
 }
 
 // NewClient returns a new Payments API Client.
-func NewClient() Client {
-	return &client{mpc: mpclient.New()}
+func NewClient(restClient rest.Client) Client {
+	return &client{
+		rc: restClient,
+	}
 }
 
 func (c *client) Create(dto Request, opts ...rest.Option) (*Response, error) {
@@ -79,13 +80,15 @@ func (c *client) Create(dto Request, opts ...rest.Option) (*Response, error) {
 		}
 	}
 
-	reqConfig := mpclient.RequestConfig{
-		Method: http.MethodPost,
-		URL:    postURL,
-		Body:   strings.NewReader(string(body)),
+	req, err := http.NewRequest(http.MethodPost, postURL, strings.NewReader(string(body)))
+	if err != nil {
+		return nil, &rest.ErrorResponse{
+			StatusCode: http.StatusInternalServerError,
+			Message:    "error creating request: " + err.Error(),
+		}
 	}
 
-	res, err := c.mpc.SendRest(reqConfig, opts...)
+	res, err := c.rc.Send(req, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -107,13 +110,15 @@ func (c *client) Search(f Filters, opts ...rest.Option) (*SearchResponse, error)
 	params.Add("begin_date", f.BeginDate)
 	params.Add("end_date", f.EndDate)
 
-	reqConfig := mpclient.RequestConfig{
-		Method: http.MethodGet,
-		URL:    searchURL + "?" + params.Encode(),
-		Body:   nil,
+	req, err := http.NewRequest(http.MethodGet, searchURL+"?"+params.Encode(), nil)
+	if err != nil {
+		return nil, &rest.ErrorResponse{
+			StatusCode: http.StatusInternalServerError,
+			Message:    "error creating request: " + err.Error(),
+		}
 	}
 
-	res, err := c.mpc.SendRest(reqConfig, opts...)
+	res, err := c.rc.Send(req, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -129,13 +134,15 @@ func (c *client) Search(f Filters, opts ...rest.Option) (*SearchResponse, error)
 func (c *client) Get(id int64, opts ...rest.Option) (*Response, error) {
 	conv := strconv.Itoa(int(id))
 
-	reqConfig := mpclient.RequestConfig{
-		Method: http.MethodGet,
-		URL:    strings.Replace(getURL, "{id}", conv, 1),
-		Body:   nil,
+	req, err := http.NewRequest(http.MethodGet, strings.Replace(getURL, "{id}", conv, 1), nil)
+	if err != nil {
+		return nil, &rest.ErrorResponse{
+			StatusCode: http.StatusInternalServerError,
+			Message:    "error creating request: " + err.Error(),
+		}
 	}
 
-	res, err := c.mpc.SendRest(reqConfig, opts...)
+	res, err := c.rc.Send(req, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -156,13 +163,15 @@ func (c *client) Cancel(id int64, opts ...rest.Option) (*Response, error) {
 	}
 
 	conv := strconv.Itoa(int(id))
-	reqConfig := mpclient.RequestConfig{
-		Method: http.MethodPut,
-		URL:    strings.Replace(putURL, "{id}", conv, 1),
-		Body:   strings.NewReader(string(body)),
+	req, err := http.NewRequest(http.MethodPut, strings.Replace(putURL, "{id}", conv, 1), strings.NewReader(string(body)))
+	if err != nil {
+		return nil, &rest.ErrorResponse{
+			StatusCode: http.StatusInternalServerError,
+			Message:    "error creating request: " + err.Error(),
+		}
 	}
 
-	res, err := c.mpc.SendRest(reqConfig, opts...)
+	res, err := c.rc.Send(req, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -183,13 +192,15 @@ func (c *client) Capture(id int64, opts ...rest.Option) (*Response, error) {
 	}
 
 	conv := strconv.Itoa(int(id))
-	reqConfig := mpclient.RequestConfig{
-		Method: http.MethodPut,
-		URL:    strings.Replace(putURL, "{id}", conv, 1),
-		Body:   strings.NewReader(string(body)),
+	req, err := http.NewRequest(http.MethodPut, strings.Replace(putURL, "{id}", conv, 1), strings.NewReader(string(body)))
+	if err != nil {
+		return nil, &rest.ErrorResponse{
+			StatusCode: http.StatusInternalServerError,
+			Message:    "error creating request: " + err.Error(),
+		}
 	}
 
-	res, err := c.mpc.SendRest(reqConfig, opts...)
+	res, err := c.rc.Send(req, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -210,13 +221,15 @@ func (c *client) CaptureAmount(id int64, amount float64, opts ...rest.Option) (*
 	}
 
 	conv := strconv.Itoa(int(id))
-	reqConfig := mpclient.RequestConfig{
-		Method: http.MethodPut,
-		URL:    strings.Replace(putURL, "{id}", conv, 1),
-		Body:   strings.NewReader(string(body)),
+	req, err := http.NewRequest(http.MethodPut, strings.Replace(putURL, "{id}", conv, 1), strings.NewReader(string(body)))
+	if err != nil {
+		return nil, &rest.ErrorResponse{
+			StatusCode: http.StatusInternalServerError,
+			Message:    "error creating request: " + err.Error(),
+		}
 	}
 
-	res, err := c.mpc.SendRest(reqConfig, opts...)
+	res, err := c.rc.Send(req, opts...)
 	if err != nil {
 		return nil, err
 	}

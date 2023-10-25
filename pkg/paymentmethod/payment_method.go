@@ -4,8 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/gdeandradero/sdk-go/pkg/mpclient"
-	"github.com/gdeandradero/sdk-go/pkg/mpclient/rest"
+	"github.com/gdeandradero/sdk-go/pkg/mp/rest"
 )
 
 const url = "https://api.mercadopago.com/v1/payment_methods"
@@ -22,22 +21,26 @@ type Client interface {
 
 // client is the implementation of Client.
 type client struct {
-	mpc mpclient.MercadoPago
+	rc rest.Client
 }
 
 // NewClient returns a new Payment Methods API Client.
-func NewClient() Client {
-	return &client{mpc: mpclient.New()}
+func NewClient(restClient rest.Client) Client {
+	return &client{
+		rc: restClient,
+	}
 }
 
 func (c *client) List(opts ...rest.Option) ([]Response, error) {
-	reqConfig := mpclient.RequestConfig{
-		Method: http.MethodGet,
-		URL:    url,
-		Body:   nil,
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, &rest.ErrorResponse{
+			StatusCode: http.StatusInternalServerError,
+			Message:    "error creating request: " + err.Error(),
+		}
 	}
 
-	res, err := c.mpc.SendRest(reqConfig, opts...)
+	res, err := c.rc.Send(req, opts...)
 	if err != nil {
 		return nil, err
 	}
