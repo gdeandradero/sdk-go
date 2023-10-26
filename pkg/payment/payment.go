@@ -19,43 +19,31 @@ const (
 
 // Client contains the methods to interact with the Payments API.
 type Client interface {
-	/*
-		Create creates a new payment.
-		It is a post request to the endpoint: https://api.mercadopago.com/v1/payments
-		Reference: https://www.mercadopago.com.br/developers/pt/reference/payments/_payments/post/
-	*/
+	// Create creates a new payment.
+	// It is a post request to the endpoint: https://api.mercadopago.com/v1/payments
+	// Reference: https://www.mercadopago.com.br/developers/pt/reference/payments/_payments/post/
 	Create(dto Request, opts ...rest.Option) (*Response, error)
 
-	/*
-		Search searches for payments.
-		It is a get request to the endpoint: https://api.mercadopago.com/v1/payments/search
-		Reference: https://www.mercadopago.com.br/developers/pt/reference/payments/_payments_search/get/
-	*/
+	// Search searches for payments.
+	// It is a get request to the endpoint: https://api.mercadopago.com/v1/payments/search
+	// Reference: https://www.mercadopago.com.br/developers/pt/reference/payments/_payments_search/get/
 	Search(f Filters, opts ...rest.Option) (*SearchResponse, error)
 
-	/*
-		Get gets a payment by its ID.
-		It is a get request to the endpoint: https://api.mercadopago.com/v1/payments/{id}
-		Reference: https://www.mercadopago.com.br/developers/pt/reference/payments/_payments_id/get/
-	*/
+	// Get gets a payment by its ID.
+	// It is a get request to the endpoint: https://api.mercadopago.com/v1/payments/{id}
+	// Reference: https://www.mercadopago.com.br/developers/pt/reference/payments/_payments_id/get/
 	Get(id int64, opts ...rest.Option) (*Response, error)
 
-	/*
-		Cancel cancels a payment by its ID.
-		It is a put request to the endpoint: https://api.mercadopago.com/v1/payments/{id}
-	*/
+	// Cancel cancels a payment by its ID.
+	// It is a put request to the endpoint: https://api.mercadopago.com/v1/payments/{id}
 	Cancel(id int64, opts ...rest.Option) (*Response, error)
 
-	/*
-		Capture captures a payment by its ID.
-		It is a put request to the endpoint: https://api.mercadopago.com/v1/payments/{id}
-	*/
+	// Capture captures a payment by its ID.
+	// It is a put request to the endpoint: https://api.mercadopago.com/v1/payments/{id}
 	Capture(id int64, opts ...rest.Option) (*Response, error)
 
-	/*
-		CaptureAmount captures amount of a payment by its ID.
-		It is a put request to the endpoint: https://api.mercadopago.com/v1/payments/{id}
-	*/
+	// CaptureAmount captures amount of a payment by its ID.
+	// It is a put request to the endpoint: https://api.mercadopago.com/v1/payments/{id}
 	CaptureAmount(id int64, amount float64, opts ...rest.Option) (*Response, error)
 }
 
