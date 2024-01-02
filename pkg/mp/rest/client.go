@@ -25,10 +25,9 @@ var c *client
 
 // Client is the interface that wraps the basic Send method.
 type Client interface {
-	/*
-		Send sends a request to the API.
-		opts are optional parameters to be used in the request, if you do not need, ignore it.
-	*/
+
+	// Send sends a request to the API.
+	// opts are optional parameters to be used in the request, if you do not need, ignore it.
 	Send(req *http.Request, opts ...Option) ([]byte, error)
 }
 
